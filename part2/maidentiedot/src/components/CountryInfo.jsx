@@ -10,8 +10,8 @@ const CountryInfo = ({selectedCountry}) => {
         <p>Capital: {selectedCountry.capital}</p>
         <p>Area: {selectedCountry.area}</p>
         <b>Languages</b>
-        {languages.map((value) => (
-            <li>{value}</li>
+        {languages.map((value, index) => (
+            <li key={index}>{value}</li>
         ))}
         <img src={selectedCountry.flags.png} alt={selectedCountry.flags.alt}/>
         </div>

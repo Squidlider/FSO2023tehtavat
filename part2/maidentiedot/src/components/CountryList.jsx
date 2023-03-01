@@ -6,9 +6,9 @@ const CountryList = ({countries, handleSelectCountryClick}) => {
     }
 
     return (
-        countries.map(country => (
+        countries.map((country, index) => (
             <>
-            <li key={country.name.common}>{country.name.common}
+            <li key={index}>{country.name.common}
             <button onClick={() => handleSelectCountryClick(country.name.common)}>Select</button>
             </li>
             </>
