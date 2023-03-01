@@ -9,6 +9,7 @@ const App = () => {
   const [filter, setFilter] = useState('')
   const [filteredCountries, setFilteredCountries] = useState([])
   const [selectedCountry, setSelectedCountry] = useState()
+  const [weather, setWeather] = useState()
 
   useEffect(() => {
     countryService.getAll().then((initialCountries) => {
@@ -18,7 +19,11 @@ const App = () => {
 
   useEffect(() => {
     if (filteredCountries.length === 1) {
-      setSelectedCountry(filteredCountries[0])
+      const country = filteredCountries[0]
+      setSelectedCountry(country)
+      countryService.getWeather(country.capital).then((weather) => {
+        setWeather(weather)
+      })
     } else {
       setSelectedCountry(null)
     }
@@ -35,8 +40,14 @@ const App = () => {
   }
 
   const handleSelectCountryClick = (name) => {
-    const country = countries.filter((c) => c.name.common === name)
-    setSelectedCountry(...country)
+    const country = countries.filter((c) => c.name.common === name)[0]
+
+    Promise.all([countryService.getWeather(country.capital)]).then(
+      ([localWeather]) => {
+        setSelectedCountry(country)
+        setWeather(localWeather)
+      }
+    )
   }
 
   return (
@@ -46,7 +57,7 @@ const App = () => {
         countries={filteredCountries}
         handleSelectCountryClick={handleSelectCountryClick}
       />
-      <CountryInfo selectedCountry={selectedCountry} />
+      <CountryInfo selectedCountry={selectedCountry} weather={weather} />
     </>
   )
 }
