@@ -46,7 +46,7 @@ describe('New or existing blog', () => {
   })
 
 
-  test('blog is saved to the database', async () => {
+  test('is saved to the database', async () => {
 
     const newBlog =
     {
@@ -74,6 +74,26 @@ describe('New or existing blog', () => {
     expect(addedBlog.likes).toEqual(newBlog.likes)
   })
 
+  test('is not saved since token is missing', async () => {
+
+    const blogsAtStart = await helper.blogsInDb()
+
+    const newBlog =
+    {
+      title: 'Kikka Kuutonen',
+      author: 'Iines Ankka',
+      url: 'gogole.com',
+      likes: 17,
+    }
+
+    await api.post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+
+    expect(blogsAtStart).toHaveLength(helper.initialBlogs.length)
+
+  })
+
   test('If likes is empty give it a 0 value', async () => {
 
     const newBlog =
@@ -94,16 +114,31 @@ describe('New or existing blog', () => {
   })
 
   test('title and url are required', async () => {
-    const newBlog = { author: 'Iines Ankka' }
+    const newBlog = { author: 'Iines Ankka', title: '', url: '' }
 
     await api.post('/api/blogs')
       .send(newBlog)
+      .set('Authorization', `Bearer ${token}`)
       .expect(400)
   })
 
-  test('delete succeeds with status code 204 if id is valid', async () => {
-    const blogsAtStart = await helper.blogsInDb()
-    const blogToDelete = blogsAtStart[0]
+  test('is added and deleted', async () => {
+
+    const newBlog =
+    {
+      title: 'Kikka Kuutonen',
+      author: 'Iines Ankka',
+      url: 'gogole.com',
+      likes: 17,
+    }
+
+    await api.post('/api/blogs')
+      .send(newBlog)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201)
+
+    const blogList = await helper.blogsInDb()
+    const blogToDelete = blogList[2]
 
     await api
       .delete(`/api/blogs/${blogToDelete.id}`)
@@ -113,7 +148,7 @@ describe('New or existing blog', () => {
     const blogsAtEnd = await helper.blogsInDb()
 
     expect(blogsAtEnd).toHaveLength(
-      helper.initialBlogs.length - 1
+      helper.initialBlogs.length
     )
 
     const titles = blogsAtEnd.map(r => r.title)
