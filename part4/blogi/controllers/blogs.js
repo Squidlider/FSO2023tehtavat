@@ -1,15 +1,6 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
-const User = require('../models/user')
-const jwt = require('jsonwebtoken')
-
-const getTokenFrom = request => {
-  const authorization = request.get('authorization')
-  if (authorization && authorization.startsWith('Bearer ')) {
-    return authorization.replace('Bearer ', '')
-  }
-  return null
-}
+const middleware = require('../utils/middleware')
 
 blogsRouter.get('/', async (request, response) => {
   const blogs = await Blog
@@ -17,25 +8,21 @@ blogsRouter.get('/', async (request, response) => {
   response.json(blogs)
 })
 
-blogsRouter.post('/', async (request, response) => {
+blogsRouter.post('/', middleware.userExtractor, async (request, response) => {
   const { title, author, url, likes } = request.body
-
-  const decodedToken = jwt.verify(getTokenFrom(request), process.env.SECRET)
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: 'token invalid' })
-  }
-  const user = await User.findById(decodedToken.id)
+  const user = request.user
 
   if (!title || !url) {
     return response.status(400).json({ error: 'Title and URL are required' })
   }
+
 
   const blog = new Blog({
     title,
     author,
     url,
     likes: likes || 0,
-    user: user._id
+    user: user
   })
 
   const savedBlog = await blog.save()
@@ -44,9 +31,17 @@ blogsRouter.post('/', async (request, response) => {
   response.status(201).json(blog)
 })
 
-blogsRouter.delete('/:id', async (request, response) => {
-  await Blog.findByIdAndDelete(request.params.id)
-  response.status(204).end()
+blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) => {
+
+  const blog = await Blog.findById(request.params.id)
+  const userid = request.user._id.toString()
+
+  if (userid === blog.user.toString()){
+    await Blog.findByIdAndDelete(request.params.id)
+    response.status(204).end()
+  } else {
+    response.status(401).json({ error: 'Et voi poistaa muiden blogeja' })
+  }
 })
 
 blogsRouter.put('/:id', async (request, response) => {
